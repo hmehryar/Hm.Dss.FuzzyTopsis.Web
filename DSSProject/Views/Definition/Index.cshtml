@@ -1,0 +1,520 @@
+﻿@model System.Collections.ArrayList
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>سیستم پشتیبان تصمیم - تصمیم گیری</title>
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/Content/bootstrap-rtl.min.css" rel="stylesheet" />
+    <link href="~/Content/Site.css" rel="stylesheet" />
+    @*<script src="~/Scripts/jquery-2.1.3.js"></script>*@
+    <script src="~/Scripts/jquery-1.10.2.js"></script>
+    <script type="text/javascript">
+        var varFuzzyWeight;
+        var method;
+        var numCriteria;
+        var numberOfAlternative;
+        var dgData;
+        var dgWeight;
+        $(function () {
+            varFuzzyWeight=@(Html.Raw(ViewBag.fuzzyWeight));
+
+	        // ****************
+
+	        $("#btnAddCriterion").click(function (e) {
+	            var strCriterionId = $("input#txtCriterionId").val();
+	            var strCriterionFuzzyValues = $("#txtCriterionFuzzyValues :selected").val();
+	            // ****************
+	            // Adding criterion to criterion table
+	            var varCritera = $("table#criteria");
+	            $(varCritera).append("<tr class='criteriaEntry'><td class='col-md-2'><div>"
+										+ strCriterionId +
+										"<i class='glyphicon'></i></div></td><td><div>"
+										+ strCriterionFuzzyValues +
+										"<i class='glyphicon'></i></div></td></tr>");
+	            $("table#criteria").append(varCritera);
+	            // ****************
+
+	            // ****************
+	            // Adding criterion to alternative add form
+	            var varAddAlternativeForm = $("form#frmAddAlternative div.panel-body");
+
+	            $(varAddAlternativeForm).append("<label for='txtAlternativeFuzzyValues' class='col-md-3'>"
+												+ strCriterionId +
+												"</label><div class='col-md-9'></div>");
+
+
+	            var s=$('<select class="form-control" id="txtAlternativeFuzzyValues" name="txtAlternativeFuzzyValues"><option value="">انتخاب درجه فازی</option></select>');
+	            for(i=0 ;i< varFuzzyWeight.length;i++){
+	                $('<option />',{text:varFuzzyWeight[i]}).appendTo(s);
+	            }
+	            s.appendTo(varAddAlternativeForm);
+	            // ****************
+	            // ****************
+	            // Adding criterion to alternative table header
+	            var varAlternativeHeader = $("table#alternatives").find("tr:first");
+	            $(varAlternativeHeader).append("<th class='col-md-2'><div>"
+												+ strCriterionId +
+												"<i class='glyphicon'></i></div></th>");
+	            // ****************
+	        });
+	        $("#btnAddAlternative").click(function(e){
+	            // ****************
+
+	            var newAlternativeValues=$("#frmAddAlternative select[name='txtAlternativeFuzzyValues']  :selected");
+	            var varAlternatives=$("table#alternatives");
+	            var tr=$('<tr />');
+	            for(i=0;i<newAlternativeValues.length;i++){
+	                $('<td />',{text:newAlternativeValues[i].text}).appendTo(tr);
+	            }
+	            varAlternatives.append(tr)
+	            // ****************
+	        });
+			
+	        $("#btnDecide").click(function(e) {
+
+	            method= $("#txtSelectedMethod :selected").val();
+	            // Minus 1 is for head row
+	            numCriteria=$("table#criteria tr").length-1;
+	            numberOfAlternative=$("table#alternatives tr").length-1;
+	            var dgDataHeader=Array();
+	            $("table#alternatives tr th").each(function(i,v){
+	                dgDataHeader[i]=$(this).text();
+	            })
+	            //alert(dgDataHeader);
+	            //console.log(dgDataHeader);
+	            dgData=Array();
+	            $("table#alternatives tr").each(function(i,v){
+	                dgData[i]=Array();
+	                $(this).children('td').each(function(ii,vv){
+	                    dgData[i][ii]=$(this).text();
+	                })
+	            })
+	            dgData.splice(0,1);
+
+	            //alert(dgData);
+	            //console.log(dgData);
+
+
+	            //for(i=0;i<dgData.length;i++){
+	            //    if (dgData[i].length!=0){
+	            //        //for(j=0;j<dgData[i].length;j++){
+	            //        //    //newdgData[i][j]=
+
+	            //        //    console.log (dgData[i][j]);
+	            //        //}
+	            //        alert(i);
+	            //        newdgData.push(dgData[i]);
+	            //        console.log("-----------------");
+	            //    }
+
+	            //}
+	            //console.log(dgData);
+	            //console.log(newdgData);
+
+
+	            var dgWeightHeader=Array();
+	            $("table#criteria tr th").each(function(i,v){
+	                dgWeightHeader[i]=$(this).text();
+	            })
+	            //alert(dgWeightHeader);
+	            //console.log(dgWeightHeader);
+	            dgWeight=Array();
+	            $("table#criteria tr").each(function(i,v){
+	                dgWeight[i]=Array();
+	                $(this).children('td').each(function(ii,vv){
+	                    dgWeight[i][ii]=$(this).text();
+	                })
+	            })
+	            dgWeight.splice(0,1);
+	            for (i=0;i<dgWeight.length;i++){
+	                dgWeight[i].splice(0,1);
+	            }
+	            //alert(dgWeight);
+	            //console.log(dgWeight);
+	            var values={
+	                "method":method,
+	                "numCriteria":numCriteria,
+	                "numberOfAlternative":numberOfAlternative,
+	                "dgData":dgData,
+	                "dgWeight":dgWeight,
+	            }
+	            $.ajaxSetup({cache: false});
+	            $.ajax({
+	                url: "@Url.Action("Decision")",
+	                type: "POST",
+	                dataType:'json',
+	                data:  JSON.stringify( values),
+	                contentType: 'application/json; charset=utf-8',
+		            //success: function(data){
+		            //    console.log(data);
+		            //},
+		            
+		            //traditional: true,
+		            success: function(data){
+		                console.log(data)
+					
+		                // ****************
+		                tblCriteria=Array();
+		                $("table#criteria tr").each(function(i,v){
+		                    tblCriteria[i]=Array();
+		                    $(this).children('td').each(function(ii,vv){
+		                        tblCriteria[i][ii]=$(this).text();
+		                    })
+		                })
+		                tblCriteria.splice(0,1);
+		                var criteriaName=[];
+		                for (i=0;i<tblCriteria.length;i++){
+		                    criteriaName.push( dgWeight[i][0]);
+		                }
+		                console.log(criteriaName);
+
+		                var varResult = $("table#results");
+		                if(varResult.find("tr").length>1){
+		                    varResult.find("tr").remove();
+		                }
+		                for(i=0;i< data.length;i++){
+		                    $(varResult).append("<tr class='resultEntry'><td class='col-md-2'><div>گزینه"
+                                                    +(i+1)+
+                                                    "<i class='glyphicon'></i></div></td><td><div>"
+                                                    + data[i] +
+                                                    "<i class='glyphicon'></i></div></td></tr>");
+		                }
+		                //$("table#results").html(varResult).append(varResult);
+		                //var trCount=$("table#results tbody > tr").length;
+		                // if (trCount <= 1){
+		                // 	$("table#results").append(varResult);
+		                // }else{
+		                // 	$("table#results tbody > tr").remove();
+		                // 	$("table#results").append(varResult);
+		                // }
+						
+		                // ****************
+					
+		            }
+		        });
+                
+		        @*$.post("@Url.Action("Decision")",values,
+                    function(data){
+				    console.log(data)
+					
+				    // ****************
+				    tblCriteria=Array();
+				    $("table#criteria tr").each(function(i,v){
+				        tblCriteria[i]=Array();
+				        $(this).children('td').each(function(ii,vv){
+				            tblCriteria[i][ii]=$(this).text();
+				        })
+				    })
+				    tblCriteria.splice(0,1);
+				    var criteriaName=[];
+				    for (i=0;i<tblCriteria.length;i++){
+				        criteriaName.push( dgWeight[i][0]);
+				    }
+				    console.log(criteriaName);
+
+				    var varResult = $("table#results");
+				    if(varResult.find("tr").length>1){
+				        varResult.find("tr").remove();
+				    }
+				    for(i=0;i< data.length;i++){
+				        $(varResult).append("<tr class='resultEntry'><td class='col-md-2'><div>گزینه"
+                                                +(i+1)+
+                                                "<i class='glyphicon'></i></div></td><td><div>"
+                                                + data[i] +
+                                                "<i class='glyphicon'></i></div></td></tr>");
+				    }
+				    //$("table#results").html(varResult).append(varResult);
+				    //var trCount=$("table#results tbody > tr").length;
+				    // if (trCount <= 1){
+				    // 	$("table#results").append(varResult);
+				    // }else{
+				    // 	$("table#results tbody > tr").remove();
+				    // 	$("table#results").append(varResult);
+				    // }
+						
+				    // ****************
+					
+				});*@
+
+		        @****
+				data: {
+						method:method,
+						numCriteria:numCriteria,
+						numberOfAlternative:numberOfAlternative,
+					//dgDataa:"123",
+					//dgWeighta:"666",
+						dgData:dgData,
+						dgWeight:dgWeight,
+						},
+				****@
+		        @*$.ajax({
+					data:{method:method,
+						numCriteria:numCriteria,
+						numberOfAlternative:numberOfAlternative,
+						dgData:dgData,
+						dgWeight:dgWeight,
+						},
+				    type: "POST",
+				    dataType: "json",
+				    url: '@Url.Action("Decision","Definition")',
+				    contentType: "application/json; charset=utf-8",
+				    error: ajaxError,
+				    success: function ajaxSucceeded(data){
+				    	console.log(data);
+				    }
+				});*@
+		    })
+
+	    })
+    </script>
+</head>
+<body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                @Html.ActionLink("سیستم پشتیبان تصمیم", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li>@Html.ActionLink("خانه", "Index", "Home")</li>
+                    <li>@Html.ActionLink("درباره ما", "About", "Home")</li>
+                    <li>@Html.ActionLink("تماس با ما", "Contact", "Home")</li>
+                </ul>
+                @Html.Partial("_LoginPartial")
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <h1 id="header" class="row text-center navbar navbar-default">تصمیم گیری با معیار های چند متغیره
+			@*<i class="glyphicon"></i>*@
+        </h1>
+        <div id="subHeader" class="row">
+        </div>
+        <div id="content" class="row">
+            <div id="menuLeft" class="col-md-2">
+            </div>
+            <div id="main" class="col-md-8">
+				@*<ul class="list-group">
+						@foreach(var item in Model)
+					{
+						<li class="list-group-item">@item</li>
+					}*@
+                @*</ul>*@
+                <form id="frmGeneralProperty" name="frmGeneralProperty" action="نشانی يک اکشن" autocomplete="off" method="post">
+                    <div>
+                        <div class="panel panel-primary">
+                            <div class="panel-heading">
+
+                                <h4 class="panel-title">مشخصات کلی</h4>
+
+                            </div>
+
+                            <div class="panel-body">
+                                <div class="form-group">
+                                    @*<label for="txtSelectMine" class="col-md-3">انتخاب معدن</label>
+                                    <div class="col-md-9">
+                                        @Html.DropDownList("txtSelectedMine", (SelectList)ViewBag.mines, "انتخاب معدن", new { @class = "form-control" })
+                                    </div>*@
+                                    <label for="txtSelectMethod" class="col-md-3">انتخاب روش تصمیم گیری</label>
+                                    <div class="col-md-9">
+                                        @Html.DropDownList("txtSelectedMethod", (SelectList)ViewBag.methods, "انتخاب روش تصمیم گیری", new { @class = "form-control" })
+                                    </div>
+                                </div>
+
+
+
+                            </div>
+
+                            <div class="panel-footer">
+
+                                @*<button type="submit" class="btn btn-primary" accesskey="S">ايجاد</button>*@
+                                <button type="reset" class="btn btn-danger" accesskey="R">حالت اوليه</button>
+
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <form id="frmAddAttribute" name="frmAddAttribute" action="نشانی يک اکشن" autocomplete="off" method="post">
+                    <div>
+                        <div class="panel panel-success">
+                            <div class="panel-heading">
+
+                                <h4 class="panel-title">افزودن معیار</h4>
+
+                            </div>
+                            <div class="panel-body">
+
+
+                                <label for="txtCriterionId" class="col-md-3">شناسه معیار</label>
+                                <div class="col-md-9">
+                                    <input id="txtCriterionId" name="txtId" type="text" class="form-control" />
+                                </div>
+
+
+                                <label for="txtCriterionFuzzyValues" class="col-md-3">درجه اهمیت فازی معیار</label>
+                                <div class="col-md-9">
+                                    @Html.DropDownList("txtCriterionFuzzyValues", (SelectList)ViewBag.fuzzyDecisionMatrix, "انتخاب درجه فازی", new { @class = "form-control" })
+                                </div>
+
+                            </div>
+                            <div class="panel-footer">
+                                <button type="button" id="btnAddCriterion" class="btn btn-success" accesskey="S">افزودن</button>
+                                <button type="reset" class="btn btn-danger" accesskey="R">حالت اوليه</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div>
+                    <div class="panel panel-success">
+                        <div class="panel-heading">
+
+                            <h4 class="panel-title">معیار</h4>
+
+                        </div>
+                        <div class="panel-body">
+
+                            <table class="crud-grid table table-striped table-bordered table-condensed table-hover criteria" id="criteria">
+                                <tr class='criteriaEntry'>
+                                    <th class="col-md-2">
+                                        <div>
+                                            شناسه معیار
+											<i class="glyphicon"></i>
+                                        </div>
+                                    </th>
+                                    <th>
+                                        <div>
+                                            درجه اهمیت فازی معیار
+											<i class="glyphicon"></i>
+                                        </div>
+                                    </th>
+                                </tr>
+
+                            </table>
+                        </div>
+                        @*<div class="panel-footer">
+								<button type="button" id="btnAddCriterion" class="btn btn-success" accesskey="S">افزودن</button>
+								<button type="reset" class="btn btn-danger" accesskey="R">حالت اوليه</button>
+							</div>*@
+                    </div>
+                </div>
+                <form id="frmAddAlternative" name="frmAddAlternative" action="نشانی يک اکشن" autocomplete="off" method="post">
+                    <div>
+                        <div class="panel panel-warning">
+                            <div class="panel-heading">
+
+                                <h4 class="panel-title">افزودن گزینه</h4>
+
+                            </div>
+                            <div class="panel-body">
+
+
+
+                                @*<label for="txtAlternativeFuzzyValues" class="col-md-3">درجه اهمیت فازی معیار</label>
+									<div class="col-md-9">
+										@Html.DropDownList("txtAlternativeFuzzyValues", (SelectList)ViewBag.fuzzyWeight, "انتخاب درجه فازی", new { @class = "form-control" })
+									</div>*@
+
+                            </div>
+                            <div class="panel-footer">
+                                <button type="button" id="btnAddAlternative" class="btn btn-warning" accesskey="S">افزودن</button>
+                                <button type="reset" class="btn btn-danger" accesskey="R">حالت اوليه</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div>
+                    <div class="panel panel-warning">
+                        <div class="panel-heading">
+
+                            <h4 class="panel-title">گزینه</h4>
+
+                        </div>
+                        <div class="panel-body">
+
+                            <table class="crud-grid table table-striped table-bordered table-condensed table-hover alternatives" id="alternatives">
+                                <tr class='alternativeEntry'>
+                                    &nbsp;
+                                </tr>
+
+                            </table>
+                        </div>
+                        @*<div class="panel-footer">
+								<button type="button" id="btnAddCriterion" class="btn btn-success" accesskey="S">افزودن</button>
+								<button type="reset" class="btn btn-danger" accesskey="R">حالت اوليه</button>
+							</div>*@
+                    </div>
+                </div>
+                <button type="button" id="btnDecide" class="btn btn-primary center-block" accesskey="S">اجرای تصمیم گیری</button>
+
+                <div>
+                    <div class="panel panel-warning">
+                        <div class="panel-heading">
+
+                            <h4 class="panel-title">نتایج تصمیم گیری</h4>
+
+                        </div>
+                        <div class="panel-body">
+
+                            <table class="crud-grid table table-striped table-bordered table-condensed table-hover results" id="results">
+                                <tbody>
+                                    <tr class='resultEntry'>
+                                        &nbsp;
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+                <br />
+            </div>
+            <div id="menuRight" class="col-md-2">
+            </div>
+        </div>
+        <div id="subFooter" class="row">
+        </div>
+        <div id="footer" class="row">
+            
+        </div>
+    </div>
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <nav class="navbar navbar-inverse navbar-fixed-bottom" role="navigation" style="z-index:100">
+		<div class="container">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				@Html.ActionLink("کلیه حقوق مادی و معنوی محفوظ می باشد. (نسخه 1.0.0)", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
+			</div>
+		</div>
+	</nav>
+</body>
+</html>

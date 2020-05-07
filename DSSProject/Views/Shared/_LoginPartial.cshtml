@@ -1,0 +1,23 @@
+﻿@if (Request.IsAuthenticated)
+{
+    <ul class="nav navbar-nav navbar-left">
+        <li>
+            @Html.ActionLink("سلام، " + User.Identity.Name + "!", "Manage", "Account", routeValues: null, htmlAttributes: new { @class = "username", title = "Manage" })
+        </li>
+        <li>
+            @using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm", @class = "navbar-left",@style="padding-top:15px;" }))
+            {
+                @Html.AntiForgeryToken()
+                <a href="javascript:document.getElementById('logoutForm').submit()">خروج</a>
+            }
+
+        </li>
+    </ul>
+}
+else
+{
+    <ul>
+        @*<li>@Html.ActionLink("ثبت نام", "Register", "Account", routeValues: null, htmlAttributes: new { id = "registerLink" })</li>*@
+        <li>@Html.ActionLink("ورود", "Login", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" ,@class = "navbar-left",@style="padding-top:15px;"})</li>
+    </ul>
+}
